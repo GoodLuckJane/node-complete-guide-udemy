@@ -2,41 +2,32 @@ const fs = require("fs");
 const path = require("path");
 const rootDir = require("../util/path");
 const cartFilePath = path.join(rootDir, "data", "cart.json");
-
+const Product = require("./product");
 const getCart = (cb) =>
   fs.readFile(cartFilePath, (err, data) => {
-    let cart = [];
+    let cart = { products: [], totalPrice: 0 };
     if (err) {
-      cb(err, []);
-    } else {
+      return console.log("get cart error: ", err);
+    } else if (data.length !== 0) {
       cart = JSON.parse(data);
-      cb(null, cart);
     }
+    console.log({ cart });
+    cb(cart);
   });
 
 const saveCart = (cart, cb) =>
   fs.writeFile(cartFilePath, JSON.stringify(cart), (err) => {
     if (err) {
-      return cb(err);
+      return console.log("save cart error", err);
     }
-    cb(null, cart);
+    cb();
   });
 
-const findProductIndexInCart = (cart, productId) => {
-  return cart.findIndex((product) => product.productId === productId);
-};
 module.exports = class Cart {
   // {products:[{productId,amount},...],totalPrice:0}
 
-  static addToCart(id, price) {
-    fs.readFile(cartFilePath, (err, data) => {
-      let cart = { products: [], totalPrice: 0 };
-      if (err) {
-        console.log(err);
-        return;
-      } else if (data.length !== 0) {
-        cart = JSON.parse(data);
-      }
+  static addToCart(id, price, quantity, cb) {
+    getCart((cart) => {
       let existingProductIndex = cart.products.findIndex(
         (product) => product.id === id
       );
@@ -45,26 +36,41 @@ module.exports = class Cart {
         const existingProduct = cart.products[existingProductIndex];
         updatedProduct = {
           ...existingProduct,
-          quantity: +existingProduct.quantity + 1,
+          quantity: +existingProduct.quantity + quantity,
         };
         cart.products[existingProductIndex] = updatedProduct;
       } else {
-        updatedProduct = { id, quantity: 1 };
+        updatedProduct = { id, quantity };
         cart.products.push(updatedProduct);
       }
-      cart.totalPrice = Number(cart.totalPrice) + Number(price);
-      console.log({ cart });
-      fs.writeFile(cartFilePath, JSON.stringify(cart), (err) => {
-        if (err) {
-          console.log("write to file error: ", err);
-        }
-      });
+      cart.totalPrice = Number(cart.totalPrice) + Number(price) * quantity;
+      saveCart(cart, () => {});
     });
   }
-  //   static getCart(cb) {
-  //     getCart(cb);
-  //   }
+  static getCart(cb) {
+    getCart(cb);
+  }
 
+  static deleteById(id, productPrice, cb) {
+    getCart((cart) => {
+      let toBeDeletedProductIndex = cart.products.findIndex(
+        (product) => product.id === id
+      );
+      const toBeDeletedProduct = cart.products[toBeDeletedProductIndex];
+      if (toBeDeletedProductIndex < 0) {
+        return console.log("could not find item");
+      }
+      cart.products.splice(toBeDeletedProductIndex, 1);
+      cart.totalPrice =
+        Number(cart.totalPrice) -
+        Number(productPrice) * toBeDeletedProduct.quantity;
+
+      saveCart(cart, cb);
+    });
+  }
+  static clearCart(cb) {
+    saveCart({ products: [], totalPrice: 0 }, cb);
+  }
   //   static addToCart(productId, incrementAmount, cb) {
   //     getCart((err, cart) => {
   //       if (err) {
