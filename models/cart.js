@@ -2,7 +2,6 @@ const fs = require("fs");
 const path = require("path");
 const rootDir = require("../util/path");
 const cartFilePath = path.join(rootDir, "data", "cart.json");
-const Product = require("./product");
 const getCart = (cb) =>
   fs.readFile(cartFilePath, (err, data) => {
     let cart = { products: [], totalPrice: 0 };

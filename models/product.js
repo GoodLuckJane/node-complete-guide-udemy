@@ -1,76 +1,30 @@
-const fs = require("fs");
-const path = require("path");
-const Cart = require("./cart");
-const p = path.join(
-  path.dirname(process.mainModule.filename),
-  "data",
-  "products.json"
-);
-
-const getProductsFromFile = (cb) => {
-  fs.readFile(p, (err, fileContent) => {
-    if (err) {
-      cb([]);
-    } else {
-      cb(JSON.parse(fileContent));
-    }
-  });
-};
+const db = require("../util/database");
 
 module.exports = class Product {
-  constructor(id, title, imageUrl, description, price) {
-    this.id = id;
-    this.title = title;
-    this.imageUrl = imageUrl;
-    this.description = description;
-    this.price = price;
+  static async addItem(newProduct) {
+    const { title, imageUrl, description, price } = newProduct;
+    const qureyStr = `INSERT INTO products(title,price,description,imageUrl) VALUES('${title}' ,'${price}', '${description}', '${imageUrl}')`;
+    console.log("before adding product, query string is:", qureyStr);
+    return db.execute(qureyStr);
   }
 
-  save(cb) {
-    getProductsFromFile((products) => {
-      if (this.id) {
-        const updatedProductIndex = products.findIndex(
-          (product) => product.id === this.id
-        );
-        products[updatedProductIndex] = { ...this };
-      } else {
-        this.id = Math.random().toString();
-        products.push(this);
-      }
-      fs.writeFile(p, JSON.stringify(products), (err) => {
-        if (err) {
-          return console.log(err);
-        }
-        cb();
-      });
-    });
+  static async editById(id, updatedProduct) {
+    const { title, imageUrl, description, price } = updatedProduct;
+    return db.execute(
+      `UPDATE products SET title=${title}, imageUrl=${imageUrl}, description=${description}, price=${price} WHERE id=${id}`
+    );
+  }
+  static async deleteById(id) {
+    return db.execute(`DELETE FROM products WHERE id=${id}`);
   }
 
-  static deleteById(id, cb) {
-    getProductsFromFile((products) => {
-      const product = products.find((p) => p.id === id);
-      const updatedProductList = products.filter(
-        (product) => product.id !== id
-      );
-      Cart.deleteById(id, product.price, () => {});
-      fs.writeFile(p, JSON.stringify(updatedProductList), (err) => {
-        if (err) {
-          return console.log(err);
-        }
-        cb();
-      });
-      // delete from cart is it is in there
-    });
+  static async fetchAll() {
+    const products = await db.execute("SELECT * FROM products");
+    return products[0];
   }
 
-  static fetchAll(cb) {
-    getProductsFromFile(cb);
-  }
-
-  static getById(id, cb) {
-    getProductsFromFile((products) => {
-      const product = products.find((p) => p.id === id);
-      cb(product);
-    });
+  static async getById(id) {
+    const product = await db.execute(`SELECT * FROM products WHERE id=${id}`);
+    return product[0][0];
   }
 };
