@@ -1,20 +1,22 @@
 const db = require("../util/database");
 
 module.exports = class Product {
-  static async addItem(newProduct) {
+  static addItem(newProduct) {
     const { title, imageUrl, description, price } = newProduct;
-    const qureyStr = `INSERT INTO products(title,price,description,imageUrl) VALUES('${title}' ,'${price}', '${description}', '${imageUrl}')`;
-    console.log("before adding product, query string is:", qureyStr);
-    return db.execute(qureyStr);
-  }
-
-  static async editById(id, updatedProduct) {
-    const { title, imageUrl, description, price } = updatedProduct;
     return db.execute(
-      `UPDATE products SET title=${title}, imageUrl=${imageUrl}, description=${description}, price=${price} WHERE id=${id}`
+      "INSERT INTO products(title,price,description,imageUrl) VALUES(?,?,?,?)",
+      [title, price, description, imageUrl]
     );
   }
-  static async deleteById(id) {
+
+  static editById(id, updatedProduct) {
+    const { title, imageUrl, description, price } = updatedProduct;
+    return db.execute(
+      "UPDATE products SET title=?, imageUrl=?, description=?, price=? WHERE id=?",
+      [title, imageUrl, description, price, id]
+    );
+  }
+  static deleteById(id) {
     return db.execute(`DELETE FROM products WHERE id=${id}`);
   }
 

@@ -28,7 +28,8 @@ exports.postEditProduct = (req, res, next) => {
     .then(() => {
       res.redirect(`/products/${id}`);
     })
-    .catch(() => {
+    .catch((err) => {
+      console.log("edit product", err);
       res.redirect("/");
     });
 };
