@@ -1,7 +1,7 @@
-const Product = require("../models/product");
+const Product = require("../services/product");
 const Cart = require("../models/cart");
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
+  Product.getProductList()
     .then((products) => {
       res.render("shop/product-list", {
         prods: products,
@@ -19,7 +19,7 @@ exports.getProducts = (req, res, next) => {
 };
 
 exports.getProductDetails = (req, res, next) => {
-  Product.getById(req.params.productId)
+  Product.getProductById(req.params.productId)
     .then((product) => {
       res.render("shop/product-detail.ejs", {
         pageTitle: "Product Details",
@@ -33,7 +33,7 @@ exports.getProductDetails = (req, res, next) => {
 };
 
 exports.getIndex = (req, res, next) => {
-  Product.fetchAll()
+  Product.getProductList()
     .then((products) => {
       res.render("shop/index", {
         prods: products,
@@ -52,7 +52,7 @@ exports.getIndex = (req, res, next) => {
 
 exports.getCart = (req, res, next) => {
   Cart.getCart((cart) => {
-    Product.fetchAll()
+    Product.getProductList()
       .then((products) => {
         const productsInCart = cart.products.map((product) => {
           let productInfo = products.find((prod) => prod.id === product.id);

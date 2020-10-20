@@ -1,5 +1,10 @@
-const Product = require("../models/product");
-
+const {
+  getProductList,
+  getProductById,
+  addProduct,
+  updateProduct,
+  deleteProduct,
+} = require("../services/product");
 exports.getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
     pageTitle: "Add Product",
@@ -9,7 +14,7 @@ exports.getAddProduct = (req, res, next) => {
 };
 
 exports.getEditProduct = (req, res, next) => {
-  Product.getById(req.params.productId)
+  getProductById(req.params.productId)
     .then((product) => {
       res.render("admin/edit-product", {
         pageTitle: "Edit Product",
@@ -24,7 +29,7 @@ exports.getEditProduct = (req, res, next) => {
 
 exports.postEditProduct = (req, res, next) => {
   const { title, imageUrl, price, description, id } = req.body;
-  Product.editById(id, { title, imageUrl, price, description })
+  updateProduct(id, { title, imageUrl, price, description })
     .then(() => {
       res.redirect(`/products/${id}`);
     })
@@ -36,9 +41,8 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.postAddProduct = (req, res, next) => {
   const { title, imageUrl, price, description } = req.body;
-  Product.addItem({ title, imageUrl, price, description })
+  addProduct({ title, imageUrl, price, description })
     .then(() => {
-      console.log("product added");
       res.redirect("/");
     })
     .catch((err) => {
@@ -48,7 +52,7 @@ exports.postAddProduct = (req, res, next) => {
 };
 
 exports.postDeleteProduct = (req, res, next) => {
-  Product.deleteById(req.body.id)
+  deleteProduct(req.body.id)
     .then(() => {
       res.redirect("/admin/products");
     })
@@ -58,7 +62,7 @@ exports.postDeleteProduct = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
+  getProductList()
     .then((products) => {
       console.log({ products });
       res.render("admin/products", {
