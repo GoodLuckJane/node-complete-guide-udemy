@@ -1,5 +1,6 @@
 const Product = require("../services/product");
 const Cart = require("../models/cart");
+
 exports.getProducts = (req, res, next) => {
   Product.getProductList()
     .then((products) => {
@@ -50,40 +51,56 @@ exports.getIndex = (req, res, next) => {
     });
 };
 
-exports.getCart = (req, res, next) => {
-  Cart.getCart((cart) => {
-    Product.getProductList()
-      .then((products) => {
-        const productsInCart = cart.products.map((product) => {
-          let productInfo = products.find((prod) => prod.id === product.id);
-          return { ...productInfo, quantity: product.quantity };
-        });
-        res.render("shop/cart", {
-          path: "/cart",
-          pageTitle: "Your Cart",
-          cart: productsInCart,
-        });
-      })
-      .catch(() => {
-        res.redirect("/");
-      });
-  });
+exports.getCart = async (req, res, next) => {
+  let cart = [];
+  try {
+    cart = await Cart.findAll();
+    const products = await Product.getProductList();
+    const productsInCart = cart.map((product) => {
+      let productInfo = products.find((prod) => prod.id == product.productId);
+      return { ...productInfo.dataValues, quantity: product.quantity };
+    });
+    res.render("shop/cart", {
+      path: "/cart",
+      pageTitle: "Your Cart",
+      cart: productsInCart,
+    });
+  } catch (err) {
+    res.redirect("/");
+  }
 };
-exports.postCart = (req, res, next) => {
-  const { productId, productPrice, quantity } = req.body;
-  Cart.addToCart(productId, productPrice, 1);
+exports.postCart = async (req, res, next) => {
+  const { productId } = req.body;
+  try {
+    const isItemInCart = await Cart.findOne({ where: { productId } });
+    if (isItemInCart) {
+      await Cart.update(
+        {
+          ...isItemInCart.dataValues,
+          quantity: isItemInCart.quantity + 1,
+        },
+        { where: { productId } }
+      );
+    } else {
+      await Cart.create({ productId, quantity: 1 });
+    }
+  } catch (err) {
+    console.log({ err });
+  } finally {
+    res.redirect("/cart");
+  }
+};
+exports.clearCart = async (req, res, next) => {
+  Cart.findAll()
+    .then((carts) => {
+      carts.forEach((cart) => cart.destroy());
+    })
+    .then(() => res.redirect("/cart"));
+};
+exports.deleteCartItem = async (req, res, next) => {
+  const { productId } = req.body;
+  await Cart.destroy({ where: { productId } });
   res.redirect("/cart");
-};
-exports.clearCart = (req, res, next) => {
-  Cart.clearCart(() => {
-    res.redirect("/cart");
-  });
-};
-exports.deleteCartItem = (req, res, next) => {
-  const { productId, productPrice } = req.body;
-  Cart.deleteById(productId, productPrice, () => {
-    res.redirect("/cart");
-  });
 };
 
 exports.getOrders = (req, res, next) => {

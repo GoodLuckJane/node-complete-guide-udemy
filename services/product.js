@@ -1,21 +1,21 @@
 const Product = require("../models/product");
 
-exports.getProductList = () => {
+exports.getProductList = async () => {
   return Product.findAll();
 };
 
-exports.getProductById = (id) => {
+exports.getProductById = async (id) => {
   return Product.findByPk(id);
 };
 
-exports.addProduct = (productObj) => {
+exports.addProduct = async (productObj) => {
   return Product.create(productObj);
 };
 
-exports.deleteProduct = (id) => {
+exports.deleteProduct = async (id) => {
   return Product.destroy({ where: { id }, force: true });
 };
 
-exports.updateProduct = (id, updatedProductObj) => {
+exports.updateProduct = async (id, updatedProductObj) => {
   return Product.update(updatedProductObj, { where: { id } });
 };
