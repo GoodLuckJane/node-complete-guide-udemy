@@ -1,9 +1,25 @@
 <%- include('../includes/head.ejs') %>
+    <link rel="stylesheet" href="/css/order.css">
     </head>
 
     <body>
         <%- include('../includes/navigation.ejs') %>
-        <main>
-            <h1>Nothing there!</h1>
-        </main>
+        <% if(orders.length > 0){ %>
+        <ul class="cart__item-list" >
+    
+            <% for (let order of orders){ %>
+            <li class="order-item">
+    
+                <h2>Order ID:<%= order.id %> </h2>
+                <h3>Status: <%= order.status %> </h3>
+                <form action='/admin/orderDetails'>
+                    <input type='hidden' name='orderId' value=<%= order.id %>>
+                    <button type='submit' class="btn">Details</button>
+                </form>
+            </li>
+            <% } %>
+        </ul>
+        <% }else{ %>
+        <h1>No Order</h1>
+        <% } %>
         <%- include('../includes/end.ejs') %>

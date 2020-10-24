@@ -8,6 +8,10 @@ const Order = sequelize.define("order", {
     autoIncrement: true,
     primaryKey: true,
   },
+  status: {
+    type: Sequelize.ENUM(["canceled", "paid", "unpaid", "completed"]),
+    allowNull: false,
+  },
 });
 
 module.exports = Order;

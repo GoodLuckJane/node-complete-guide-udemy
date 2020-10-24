@@ -1,0 +1,9 @@
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 1rem 3rem;
+  border: 1px solid green;
+  padding: 0 20px;
+  border-radius: 3px;
+  align-items: center;
+}

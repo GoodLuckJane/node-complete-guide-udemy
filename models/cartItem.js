@@ -1,7 +1,7 @@
 const Sequelize = require("sequelize");
 const sequelize = require("../util/database");
 
-const ProductCart = sequelize.define("product-cart", {
+const CartItem = sequelize.define("cartItem", {
   id: {
     type: Sequelize.INTEGER,
     autoIncrement: true,
@@ -14,4 +14,4 @@ const ProductCart = sequelize.define("product-cart", {
   },
 });
 
-module.exports = ProductCart;
+module.exports = CartItem;

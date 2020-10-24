@@ -1,8 +1,4 @@
-const {
-  getProductById,
-  updateProduct,
-  deleteProduct,
-} = require("../services/product");
+const { Product, Order, OrderItem, CartItem } = require("../models");
 exports.getAddProduct = (req, res) => {
   res.render("admin/edit-product", {
     pageTitle: "Add Product",
@@ -12,7 +8,7 @@ exports.getAddProduct = (req, res) => {
 };
 
 exports.getEditProduct = (req, res) => {
-  getProductById(req.params.productId)
+  Product.findByPk(req.params.productId)
     .then((product) => {
       res.render("admin/edit-product", {
         pageTitle: "Edit Product",
@@ -27,7 +23,7 @@ exports.getEditProduct = (req, res) => {
 
 exports.postEditProduct = (req, res) => {
   const { title, imageUrl, price, description, id } = req.body;
-  updateProduct(id, { title, imageUrl, price, description })
+  Product.update({ title, imageUrl, price, description }, { where: { id } })
     .then(() => {
       res.redirect(`/products/${id}`);
     })
@@ -54,7 +50,10 @@ exports.postAddProduct = (req, res) => {
 };
 
 exports.postDeleteProduct = (req, res) => {
-  deleteProduct(req.body.id)
+  Product.findByPk(req.body.id)
+    .then((product) => {
+      return product.destroy();
+    })
     .then(() => {
       res.redirect("/admin/products");
     })
@@ -77,4 +76,61 @@ exports.getProducts = (req, res) => {
     .catch(() => {
       res.redirect("/admin/products");
     });
+};
+
+exports.getOrderDetails = async (req, res) => {
+  try {
+    let orderId = req.query.orderId;
+    let itemsInOrder = [];
+    let totalPrice = 0;
+    if (orderId) {
+      itemsInOrder = await req.user.getOrders({
+        where: { id: orderId },
+        include: Product,
+      });
+      itemsInOrder = itemsInOrder[0].products;
+      if (itemsInOrder.length > 0) {
+        itemsInOrder.forEach((product) => {
+          totalPrice = totalPrice + product.price * product.orderItem.quantity;
+        });
+      }
+    } else {
+      // from cart
+      let cart = await req.user.getCart({ include: Product });
+      if (cart) {
+        // add all these products and quantity to orders
+        const newOrder = await req.user.createOrder({ status: "unpaid" });
+        await newOrder.addProducts(
+          cart.products.map((product) => {
+            let quantity = product.cartItem.quantity;
+            product.orderItem = { quantity };
+            totalPrice = totalPrice + quantity * product.price;
+            return product;
+          })
+        );
+        itemsInOrder = await newOrder.getProducts();
+        // set cart to be empty
+        await req.cart.setProducts(null);
+      }
+    }
+    res.render("admin/order-details.ejs", {
+      order: itemsInOrder,
+      pageTitle: "Your Order",
+      totalPrice,
+      path: "/admin/orderDetails",
+    });
+  } catch (err) {
+    console.log("get order details page error: ", err);
+    res.redirect("/cart");
+  }
+};
+
+exports.cancelOrder = async (req, res) => {
+  console.log(req);
+  res.redirect("/");
+};
+
+exports.postCheckout = async (req, res) => {
+  console.log(req);
+  res.redirect("/");
 };

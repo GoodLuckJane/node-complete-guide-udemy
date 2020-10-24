@@ -23,4 +23,13 @@ router.post("/edit-product", adminController.postEditProduct);
 
 // /admin/delete-product => POST
 router.post("/delete-product", adminController.postDeleteProduct);
+
+// /admin/checkout => GET
+router.get("/orderDetails", adminController.getOrderDetails);
+
+// /admin/cancel-order => POST
+router.post("/cancel-order", adminController.cancelOrder);
+
+// /admin/checkout => POST
+router.post("/checkout", adminController.postCheckout);
 module.exports = router;
