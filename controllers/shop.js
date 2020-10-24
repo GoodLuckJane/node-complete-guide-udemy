@@ -1,32 +1,7 @@
 const Product = require("../services/product");
-const { Cart, User, ProductCart } = require("../models");
-const getUserAndCart = async () => {
-  try {
-    // get current user
-    // if user doesn't exists, create one
-    let user = await User.findAll();
-    if (user.length === 0) {
-      await User.create({
-        name: "Jane Zhang",
-        email: "jane.zhang@fintelics.com",
-      });
-      user = await User.findAll();
-    }
-    user = user[0];
+const { ProductCart } = require("../models");
 
-    let cart = await user.getCart();
-    if (!cart) {
-      // if cart doesn't exists, create one
-      cart = await user.createCart({ id: 1 });
-      // cart = await user.getCart();
-    }
-    return { user, cart };
-  } catch (err) {
-    console.log("get user and cart error: ", err);
-    throw err;
-  }
-};
-exports.getProducts = (req, res, next) => {
+exports.getProducts = (req, res) => {
   Product.getProductList()
     .then((products) => {
       res.render("shop/product-list", {
@@ -44,7 +19,7 @@ exports.getProducts = (req, res, next) => {
     });
 };
 
-exports.getProductDetails = (req, res, next) => {
+exports.getProductDetails = (req, res) => {
   Product.getProductById(req.params.productId)
     .then((product) => {
       res.render("shop/product-detail.ejs", {
@@ -58,7 +33,7 @@ exports.getProductDetails = (req, res, next) => {
     });
 };
 
-exports.getIndex = (req, res, next) => {
+exports.getIndex = (req, res) => {
   Product.getProductList()
     .then((products) => {
       res.render("shop/index", {
@@ -76,9 +51,9 @@ exports.getIndex = (req, res, next) => {
     });
 };
 
-exports.getCart = async (req, res, next) => {
+exports.getCart = async (req, res) => {
   try {
-    let { cart } = await getUserAndCart();
+    let cart = req.cart;
     let cartProductList = await cart.getProducts();
     let productCartList = await ProductCart.findAll();
     const productsInCart = cartProductList.map((product) => {
@@ -96,11 +71,11 @@ exports.getCart = async (req, res, next) => {
     res.redirect("/");
   }
 };
-exports.postCart = async (req, res, next) => {
+exports.postCart = async (req, res) => {
   const { productId } = req.body;
   try {
     let product = await Product.getProductById(productId);
-    let { cart } = await getUserAndCart();
+    let cart = req.cart;
     const isItemInCart = await cart.hasProduct(product);
     if (isItemInCart) {
       let productCart = await ProductCart.findOne({
@@ -124,15 +99,15 @@ exports.postCart = async (req, res, next) => {
     res.redirect("/cart");
   }
 };
-exports.clearCart = async (req, res, next) => {
-  const { cart } = await getUserAndCart();
+exports.clearCart = async (req, res) => {
+  let cart = req.cart;
   await cart.setProducts([]);
   res.redirect("/cart");
 };
-exports.deleteCartItem = async (req, res, next) => {
+exports.deleteCartItem = async (req, res) => {
   try {
     const { productId } = req.body;
-    const { cart } = await getUserAndCart();
+    let cart = req.cart;
     let product = await Product.getProductById(productId);
     await cart.removeProduct(product);
   } catch (err) {
@@ -142,14 +117,14 @@ exports.deleteCartItem = async (req, res, next) => {
   }
 };
 
-exports.getOrders = (req, res, next) => {
+exports.getOrders = (req, res) => {
   res.render("shop/orders", {
     path: "/orders",
     pageTitle: "Your Orders",
   });
 };
 
-exports.getCheckout = (req, res, next) => {
+exports.getCheckout = (req, res) => {
   res.render("shop/checkout", {
     path: "/checkout",
     pageTitle: "Checkout",

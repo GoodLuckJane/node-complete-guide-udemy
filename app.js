@@ -16,7 +16,17 @@ const shopRoutes = require("./routes/shop");
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
-
+app.use(async (req, res, next) => {
+  try {
+    let user = await User.findByPk(1);
+    let cart = await user.getCart();
+    req.user = user;
+    req.cart = cart;
+    next();
+  } catch (err) {
+    console.log(err);
+  }
+});
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
 
@@ -38,6 +48,24 @@ Cart.belongsToMany(Product, { through: "product-cart" });
 
 sequelize
   .sync()
+  .then(() => {
+    return Promise.all([User.findByPk(1), Cart.findByPk(1)]);
+  })
+  .then(([user, cart]) => {
+    let promises = [];
+    if (!user) {
+      promises.push(
+        User.create({
+          name: "Jane Zhang",
+          email: "jane.zhang@fintelics.com",
+        })
+      );
+    }
+    if (!cart) {
+      promises.push(Cart.create({ id: 1, userId: 1 }));
+    }
+    return Promise.all(promises);
+  })
   .then(() => {
     app.listen(3000);
   })
