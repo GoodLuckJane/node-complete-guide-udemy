@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 
 const errorController = require("./controllers/error");
 const sequelize = require("./util/database");
-const { Product, Cart, User } = require("./models");
+const { Product, Cart, User, Order } = require("./models");
 
 const app = express();
 
@@ -44,8 +44,12 @@ Product.belongsTo(User);
 Product.belongsToMany(Cart, { through: "product-cart" });
 Cart.belongsToMany(Product, { through: "product-cart" });
 
+// User and Order
+User.hasMany(Order);
+Order.belongsTo(User);
 // Product and Order (shop product): many-to-many
-
+Product.belongsToMany(Order, { through: "orderItem" });
+Order.belongsToMany(Product, { through: "orderItem" });
 sequelize
   .sync()
   .then(() => {
