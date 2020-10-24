@@ -81,7 +81,6 @@ exports.postCart = async (req, res) => {
       let productCart = await ProductCart.findOne({
         where: { cartId: cart.id },
       });
-      console.log("the item in ProductCart table: ", productCart);
       await productCart.update(
         { quantity: productCart.quantity + 1 },
         { where: { cartId: cart._id } }

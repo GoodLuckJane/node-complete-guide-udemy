@@ -1,11 +1,9 @@
 const {
-  getProductList,
   getProductById,
-  addProduct,
   updateProduct,
   deleteProduct,
 } = require("../services/product");
-exports.getAddProduct = (req, res, next) => {
+exports.getAddProduct = (req, res) => {
   res.render("admin/edit-product", {
     pageTitle: "Add Product",
     path: "/admin/add-product",
@@ -13,7 +11,7 @@ exports.getAddProduct = (req, res, next) => {
   });
 };
 
-exports.getEditProduct = (req, res, next) => {
+exports.getEditProduct = (req, res) => {
   getProductById(req.params.productId)
     .then((product) => {
       res.render("admin/edit-product", {
@@ -27,7 +25,7 @@ exports.getEditProduct = (req, res, next) => {
     });
 };
 
-exports.postEditProduct = (req, res, next) => {
+exports.postEditProduct = (req, res) => {
   const { title, imageUrl, price, description, id } = req.body;
   updateProduct(id, { title, imageUrl, price, description })
     .then(() => {
@@ -39,19 +37,23 @@ exports.postEditProduct = (req, res, next) => {
     });
 };
 
-exports.postAddProduct = (req, res, next) => {
+exports.postAddProduct = (req, res) => {
   const { title, imageUrl, price, description } = req.body;
-  addProduct({ title, imageUrl, price, description })
+  let user = req.user;
+  console.log({ title, imageUrl, price, description });
+  // let product = Product.addProduct({ title, imageUrl, price, description });
+  user
+    .createProduct({ title, imageUrl, price, description })
     .then(() => {
       res.redirect("/");
     })
     .catch((err) => {
-      console.log("add item error", err);
+      console.log("add product to user error", err);
       res.redirect("/");
     });
 };
 
-exports.postDeleteProduct = (req, res, next) => {
+exports.postDeleteProduct = (req, res) => {
   deleteProduct(req.body.id)
     .then(() => {
       res.redirect("/admin/products");
@@ -61,10 +63,11 @@ exports.postDeleteProduct = (req, res, next) => {
     });
 };
 
-exports.getProducts = (req, res, next) => {
-  getProductList()
+exports.getProducts = (req, res) => {
+  let user = req.user;
+  user
+    .getProducts()
     .then((products) => {
-      console.log({ products });
       res.render("admin/products", {
         prods: products,
         pageTitle: "Admin Products",
