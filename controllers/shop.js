@@ -1,6 +1,31 @@
 const Product = require("../services/product");
-const Cart = require("../models/cart");
+const { Cart, User, ProductCart } = require("../models");
+const getUserAndCart = async () => {
+  try {
+    // get current user
+    // if user doesn't exists, create one
+    let user = await User.findAll();
+    if (user.length === 0) {
+      await User.create({
+        name: "Jane Zhang",
+        email: "jane.zhang@fintelics.com",
+      });
+      user = await User.findAll();
+    }
+    user = user[0];
 
+    let cart = await user.getCart();
+    if (!cart) {
+      // if cart doesn't exists, create one
+      cart = await user.createCart({ id: 1 });
+      // cart = await user.getCart();
+    }
+    return { user, cart };
+  } catch (err) {
+    console.log("get user and cart error: ", err);
+    throw err;
+  }
+};
 exports.getProducts = (req, res, next) => {
   Product.getProductList()
     .then((products) => {
@@ -52,13 +77,15 @@ exports.getIndex = (req, res, next) => {
 };
 
 exports.getCart = async (req, res, next) => {
-  let cart = [];
   try {
-    cart = await Cart.findAll();
-    const products = await Product.getProductList();
-    const productsInCart = cart.map((product) => {
-      let productInfo = products.find((prod) => prod.id == product.productId);
-      return { ...productInfo.dataValues, quantity: product.quantity };
+    let { cart } = await getUserAndCart();
+    let cartProductList = await cart.getProducts();
+    let productCartList = await ProductCart.findAll();
+    const productsInCart = cartProductList.map((product) => {
+      let productCartItem = productCartList.find(
+        (item) => item.productId === product.id
+      );
+      return { ...product.dataValues, quantity: productCartItem.quantity };
     });
     res.render("shop/cart", {
       path: "/cart",
@@ -72,35 +99,47 @@ exports.getCart = async (req, res, next) => {
 exports.postCart = async (req, res, next) => {
   const { productId } = req.body;
   try {
-    const isItemInCart = await Cart.findOne({ where: { productId } });
+    let product = await Product.getProductById(productId);
+    let { cart } = await getUserAndCart();
+    const isItemInCart = await cart.hasProduct(product);
     if (isItemInCart) {
-      await Cart.update(
-        {
-          ...isItemInCart.dataValues,
-          quantity: isItemInCart.quantity + 1,
-        },
-        { where: { productId } }
+      let productCart = await ProductCart.findOne({
+        where: { cartId: cart.id },
+      });
+      console.log("the item in ProductCart table: ", productCart);
+      await productCart.update(
+        { quantity: productCart.quantity + 1 },
+        { where: { cartId: cart._id } }
       );
     } else {
-      await Cart.create({ productId, quantity: 1 });
+      await ProductCart.create({
+        productId,
+        cartId: cart.id,
+        quantity: 1,
+      });
     }
   } catch (err) {
-    console.log({ err });
+    console.log({ err: err.errors });
   } finally {
     res.redirect("/cart");
   }
 };
 exports.clearCart = async (req, res, next) => {
-  Cart.findAll()
-    .then((carts) => {
-      carts.forEach((cart) => cart.destroy());
-    })
-    .then(() => res.redirect("/cart"));
+  const { cart } = await getUserAndCart();
+  await cart.setProducts([]);
+  res.redirect("/cart");
 };
 exports.deleteCartItem = async (req, res, next) => {
-  const { productId } = req.body;
-  await Cart.destroy({ where: { productId } });
-  res.redirect("/cart");
+  try {
+    const { productId } = req.body;
+    const { cart } = await getUserAndCart();
+    let product = await Product.getProductById(productId);
+    await cart.removeProduct(product);
+  } catch (err) {
+    console.log("delete cart item error: ", err);
+  } finally {
+    res.redirect("/cart");
+  }
 };
 
 exports.getOrders = (req, res, next) => {
